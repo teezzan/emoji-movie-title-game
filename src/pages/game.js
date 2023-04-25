@@ -1,6 +1,7 @@
 import QuizQuestion from "../components/QuizQuestion";
 import Header from "../components/Header";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 
 const quizQuestions = [
   { emojiTitle: "👨‍👩‍👧‍👦🐕", correctTitle: "Marley & Me" },
@@ -54,22 +55,27 @@ const QuizPage = () => {
   const [shareText, setShareText] = useState("");
 
   const hasPlayedToday = () => {
-    const lastPlayedDate = localStorage.getItem("lastPlayedDate");
-    if (!lastPlayedDate) return false;
+    if (typeof window !== "undefined") {
+      const lastPlayedDate = localStorage.getItem("lastPlayedDate");
+      if (!lastPlayedDate) return false;
 
-    const lastPlayedTimestamp = new Date(lastPlayedDate).getTime();
-    const currentTimestamp = new Date().getTime();
+      const lastPlayedTimestamp = new Date(lastPlayedDate).getTime();
+      const currentTimestamp = new Date().getTime();
 
-    // Check if 24 hours have passed since the last played date
-    return currentTimestamp - lastPlayedTimestamp < 24 * 60 * 60 * 1000;
+      // Check if 24 hours have passed since the last played date
+      return currentTimestamp - lastPlayedTimestamp < 24 * 60 * 60 * 1000;
+    }
+    return false;
   };
 
   const [isBlocked, setIsBlocked] = useState(hasPlayedToday());
   const currentQuestion = quizQuestions[currentQuestionIndex];
 
   const handleQuizFinished = () => {
-    // Store the current date in local storage when the quiz is finished
-    localStorage.setItem("lastPlayedDate", new Date().toISOString());
+    if (typeof window !== "undefined") {
+      // Store the current date in local storage when the quiz is finished
+      localStorage.setItem("lastPlayedDate", new Date().toISOString());
+    }
   };
 
   useEffect(() => {
@@ -189,4 +195,4 @@ const QuizPage = () => {
   );
 };
 
-export default QuizPage;
+export default dynamic(() => Promise.resolve(QuizPage), { ssr: false });
