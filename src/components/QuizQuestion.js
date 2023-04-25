@@ -5,6 +5,7 @@ const QuizQuestion = ({
   correctTitle,
   onNextQuestion,
   onCorrectAnswer,
+  onWrongAnswer,
 }) => {
   const [userAnswer, setUserAnswer] = useState("");
   const [isCorrect, setIsCorrect] = useState(null);
@@ -16,6 +17,7 @@ const QuizQuestion = ({
       onCorrectAnswer();
     } else {
       setIsCorrect(false);
+      onWrongAnswer();
     }
     setIsAnswerSubmitted(true);
   };

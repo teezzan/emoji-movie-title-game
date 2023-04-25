@@ -1,6 +1,6 @@
 import QuizQuestion from "../components/QuizQuestion";
 import Header from "../components/Header";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const quizQuestions = [
   { emojiTitle: "👨‍👩‍👧‍👦🐕", correctTitle: "Marley & Me" },
@@ -13,7 +13,7 @@ const QuizPage = () => {
   const [score, setScore] = useState(0);
   const [rightAnswers, setRightAnswers] = useState([]);
   const [wrongAnswers, setWrongAnswers] = useState([]);
-  const [userAnswer, setUserAnswer] = useState("");
+  const [shareText, setShareText] = useState("");
 
   const generateShareText = (correctAnswers, incorrectAnswers) => {
     let shareText = "I got ";
@@ -27,19 +27,25 @@ const QuizPage = () => {
     // Add the list of correct answers to the shareText
     if (correctAnswers.length > 0) {
       shareText += "Correct answers:\n";
-      shareText += correctAnswers
-        .map((question) => question.correctTitle)
-        .join(", ");
-      shareText += "\n\n";
+
+      correctAnswers.forEach((question, index) => {
+        shareText += quizQuestions[question].emojiTitle;
+        shareText += "   ✅\n";
+      });
+
+      shareText += "\n";
     }
 
     // Add the list of incorrect answers to the shareText
     if (incorrectAnswers.length > 0) {
       shareText += "Incorrect answers:\n";
-      shareText += incorrectAnswers
-        .map((question) => question.emojiTitle)
-        .join(", ");
-      shareText += "\n\n";
+
+      incorrectAnswers.forEach((question, index) => {
+        shareText += quizQuestions[question].emojiTitle;
+        shareText += "   ❌\n";
+      });
+
+      shareText += "\n";
     }
 
     // Add a message to encourage people to take the quiz
@@ -47,6 +53,10 @@ const QuizPage = () => {
 
     return shareText;
   };
+
+  useEffect(() => {
+    setShareText(generateShareText(rightAnswers, wrongAnswers));
+  }, [currentQuestionIndex]);
 
   const handleNextQuestion = () => {
     setCurrentQuestionIndex((currentIndex) => currentIndex + 1);
@@ -60,19 +70,19 @@ const QuizPage = () => {
     ]);
   };
 
-  const handleAnswerSubmit = () => {
-    if (
-      userAnswer.toLowerCase() === currentQuestion.correctTitle.toLowerCase()
-    ) {
-      setIsCorrect(true);
-      onCorrectAnswer();
-    } else {
-      setIsCorrect(false);
-      setWrongAnswers((currentWrongAnswers) => [
-        ...currentWrongAnswers,
-        currentQuestionIndex,
-      ]);
-    }
+  const handleWrongAnswer = () => {
+    setWrongAnswers((currentWrongAnswers) => [
+      ...currentWrongAnswers,
+      currentQuestionIndex,
+    ]);
+  };
+  const handleCopyShareText = () => {
+    const generatedText = generateShareText(rightAnswers, wrongAnswers); // Generate text when copying
+    setShareText(generatedText);
+
+    navigator.clipboard.writeText(generatedText).then(() => {
+      alert("Share text copied to clipboard!");
+    });
   };
 
   const currentQuestion = quizQuestions[currentQuestionIndex];
@@ -82,11 +92,11 @@ const QuizPage = () => {
     const representation = quizQuestions
       .map((question, index) => {
         if (rightAnswers.includes(index)) {
-          return "✅"; // Mark correct answers with an "O"
+          return "✅";
         } else if (wrongAnswers.includes(index)) {
-          return "❌"; // Mark incorrect answers with an "X"
+          return "❌";
         } else {
-          return "-"; // Mark unanswered questions with a "-"
+          return "❌";
         }
       })
       .join("");
@@ -104,14 +114,19 @@ const QuizPage = () => {
           <p className="text-xl font-bold mb-8">
             Representation: {representation}
           </p>
-          <button
-            onClick={() =>
-              window.alert(generateShareText(rightAnswers, wrongAnswers))
-            }
-            className="bg-white text-black font-bold py-2 px-4 rounded mt-8 hover:bg-gray-200"
-          >
-            Share your results
-          </button>
+          <div className="flex items-center">
+            <textarea
+              readOnly
+              value={shareText}
+              className="w-full h-48 bg-white text-black py-2 px-4 rounded" // Set `h-48` to make the default height larger
+            />
+            <button
+              onClick={handleCopyShareText}
+              className="bg-white text-black font-bold py-2 px-4 rounded ml-4 hover:bg-gray-200"
+            >
+              Copy
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -126,9 +141,7 @@ const QuizPage = () => {
           correctTitle={currentQuestion.correctTitle}
           onNextQuestion={handleNextQuestion}
           onCorrectAnswer={handleCorrectAnswer}
-          userAnswer={userAnswer}
-          setUserAnswer={setUserAnswer}
-          onSubmit={handleAnswerSubmit}
+          onWrongAnswer={handleWrongAnswer}
         />
         <p className="text-2xl font-bold mt-8">
           Score: <span className="text-yellow-300">{score}</span>
