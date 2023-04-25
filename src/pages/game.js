@@ -7,6 +7,44 @@ const quizQuestions = [
   { emojiTitle: "👦🔪🕵️‍♂️", correctTitle: "Home Alone" },
   // Add more questions here
 ];
+const generateShareText = (correctAnswers, incorrectAnswers) => {
+  let shareText = "I got ";
+
+  // Add the number of correct answers to the shareText
+  shareText += correctAnswers.length;
+  shareText += " out of ";
+  shareText += quizQuestions.length;
+  shareText += " correct!\n\n";
+
+  // Add the list of correct answers to the shareText
+  if (correctAnswers.length > 0) {
+    shareText += "Correct answers:\n";
+
+    correctAnswers.forEach((question, index) => {
+      shareText += quizQuestions[question].emojiTitle;
+      shareText += "   ✅\n";
+    });
+
+    shareText += "\n";
+  }
+
+  // Add the list of incorrect answers to the shareText
+  if (incorrectAnswers.length > 0) {
+    shareText += "Incorrect answers:\n";
+
+    incorrectAnswers.forEach((question, index) => {
+      shareText += quizQuestions[question].emojiTitle;
+      shareText += "   ❌\n";
+    });
+
+    shareText += "\n";
+  }
+
+  // Add a message to encourage people to take the quiz
+  shareText += "Can you beat my score? Take the quiz now!";
+
+  return shareText;
+};
 
 const QuizPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -15,46 +53,29 @@ const QuizPage = () => {
   const [wrongAnswers, setWrongAnswers] = useState([]);
   const [shareText, setShareText] = useState("");
 
-  const generateShareText = (correctAnswers, incorrectAnswers) => {
-    let shareText = "I got ";
+  const hasPlayedToday = () => {
+    const lastPlayedDate = localStorage.getItem("lastPlayedDate");
+    if (!lastPlayedDate) return false;
 
-    // Add the number of correct answers to the shareText
-    shareText += correctAnswers.length;
-    shareText += " out of ";
-    shareText += quizQuestions.length;
-    shareText += " correct!\n\n";
+    const lastPlayedTimestamp = new Date(lastPlayedDate).getTime();
+    const currentTimestamp = new Date().getTime();
 
-    // Add the list of correct answers to the shareText
-    if (correctAnswers.length > 0) {
-      shareText += "Correct answers:\n";
+    // Check if 24 hours have passed since the last played date
+    return currentTimestamp - lastPlayedTimestamp < 24 * 60 * 60 * 1000;
+  };
 
-      correctAnswers.forEach((question, index) => {
-        shareText += quizQuestions[question].emojiTitle;
-        shareText += "   ✅\n";
-      });
+  const [isBlocked, setIsBlocked] = useState(hasPlayedToday());
+  const currentQuestion = quizQuestions[currentQuestionIndex];
 
-      shareText += "\n";
-    }
-
-    // Add the list of incorrect answers to the shareText
-    if (incorrectAnswers.length > 0) {
-      shareText += "Incorrect answers:\n";
-
-      incorrectAnswers.forEach((question, index) => {
-        shareText += quizQuestions[question].emojiTitle;
-        shareText += "   ❌\n";
-      });
-
-      shareText += "\n";
-    }
-
-    // Add a message to encourage people to take the quiz
-    shareText += "Can you beat my score? Take the quiz now!";
-
-    return shareText;
+  const handleQuizFinished = () => {
+    // Store the current date in local storage when the quiz is finished
+    localStorage.setItem("lastPlayedDate", new Date().toISOString());
   };
 
   useEffect(() => {
+    if (!currentQuestion) {
+      handleQuizFinished();
+    }
     setShareText(generateShareText(rightAnswers, wrongAnswers));
   }, [currentQuestionIndex]);
 
@@ -77,7 +98,10 @@ const QuizPage = () => {
     ]);
   };
   const handleCopyShareText = () => {
-    const generatedText = generateShareText(rightAnswers, wrongAnswers); // Generate text when copying
+    // Store the current date in local storage
+    localStorage.setItem("lastPlayedDate", new Date().toISOString());
+
+    const generatedText = generateShareText(rightAnswers, wrongAnswers);
     setShareText(generatedText);
 
     navigator.clipboard.writeText(generatedText).then(() => {
@@ -85,7 +109,21 @@ const QuizPage = () => {
     });
   };
 
-  const currentQuestion = quizQuestions[currentQuestionIndex];
+  if (isBlocked) {
+    return (
+      <div className="bg-gradient-to-br from-purple-300 to-grey-900 text-white min-h-screen">
+        <Header />
+        <div className="flex flex-col justify-center items-center h-full">
+          <p className="text-4xl font-bold mb-8">
+            You already played the daily quiz today!
+          </p>
+          <p className="text-2xl font-bold mb-8">
+            Please come back tomorrow for a new quiz.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentQuestion) {
     // Generate representation
